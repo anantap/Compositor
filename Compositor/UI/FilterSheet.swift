@@ -61,6 +61,28 @@ struct FilterSheet: View {
                 control("Yellow / Blue", \.colorBalance.highlightYellowBlue, range: ColorBalanceSettings.range, unit: "", decimals: 0, logarithmic: false, track: Self.yellowBlueTrack)
                 Toggle("Preserve Luminosity", isOn: flag(\.colorBalance.preserveLuminosity))
                     .help("Put each pixel's brightness back afterwards, so only the color moves")
+            case .filmNegative:
+                control("Exposure", \.filmNegative.exposure, range: FilmNegativeSettings.exposureRange, unit: "", decimals: 0, logarithmic: false)
+                    .help("Brighter or darker, about two stops each way")
+                control("Contrast", \.filmNegative.contrast, range: FilmNegativeSettings.contrastRange, unit: "", decimals: 0, logarithmic: false)
+                    .help("How strong the print's S curve is")
+                control("Temperature", \.filmNegative.temperature, range: FilmNegativeSettings.colorRange, unit: "", decimals: 0, logarithmic: false,
+                        track: .temperature)
+                    .help("Cooler or warmer")
+                control("Tint", \.filmNegative.tint, range: FilmNegativeSettings.colorRange, unit: "", decimals: 0, logarithmic: false,
+                        track: .tint)
+                    .help("Toward green or toward magenta")
+                control("Black Point", \.filmNegative.blackPoint, range: FilmNegativeSettings.pointRange, unit: "", decimals: 0, logarithmic: false)
+                    .help("Raise to deepen the shadows; lower to open them up")
+                control("White Point", \.filmNegative.whitePoint, range: FilmNegativeSettings.pointRange, unit: "", decimals: 0, logarithmic: false)
+                    .help("Lower to brighten the highlights; raise to hold them back")
+                HStack {
+                    Button("Measure Again") { session.measureFilmNegative() }
+                        .help("Find the film base and the tones afresh from the scan, after cropping it or for another frame")
+                    Spacer()
+                }
+                Text("For a scan of a color negative as it is, orange mask and all. Leave a little unexposed film at the edge of the frame for the cleanest shadows.")
+                    .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             case .grain:
                 control("Amount", \.grain.amount, range: GrainSettings.amountRange, unit: "", decimals: 0, logarithmic: false)
                 control("Size", \.grain.size, range: GrainSettings.sizeRange, unit: "px", decimals: 1, logarithmic: true)

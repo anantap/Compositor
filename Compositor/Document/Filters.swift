@@ -30,6 +30,7 @@ nonisolated enum FilterKind: String, CaseIterable, Sendable {
     case grain = "Grain"
     case blackWhite = "Black & White"
     case colorBalance = "Color Balance"
+    case filmNegative = "Film Negative"
     var isAutomatic: Bool { self == .contentAwareFill || self == .removeBackground }
     /// The Filter menu's own filters, which Last Filter can run again; not Content-Aware Fill or the Image menu's.
     var repeatsAsLastFilter: Bool { self != .contentAwareFill && !isImageAdjustment }
@@ -57,7 +58,7 @@ nonisolated enum FilterKind: String, CaseIterable, Sendable {
     /// Color adjustments: in the Image menu (and editable as adjustment layers), not under Filter.
     var isImageAdjustment: Bool {
         self == .curves || self == .exposure || self == .gradientMap || self == .grain
-            || self == .blackWhite || self == .colorBalance
+            || self == .blackWhite || self == .colorBalance || self == .filmNegative
     }
 }
 
@@ -145,6 +146,7 @@ nonisolated struct FilterSettings: Equatable, Sendable {
     var grain = GrainSettings()
     var blackWhite = BlackWhiteSettings()
     var colorBalance = ColorBalanceSettings()
+    var filmNegative = FilmNegativeSettings()
     var dither = DitherSettings()
     var scanlines = ScanlinesSettings()
     var cameraRaw = CameraRawSettings()
@@ -195,6 +197,7 @@ nonisolated struct FilterSettings: Equatable, Sendable {
         result.shiftEdge = clamp(shiftEdge, -10...10, 0)
         result.exposure = exposure.normalized
         result.gradientMap = gradientMap.normalized
+        result.filmNegative = filmNegative.normalized
         result.grain = grain.normalized
         result.dither = dither.normalized
         result.scanlines = scanlines.normalized
@@ -353,6 +356,7 @@ nonisolated enum PixelFilter {
         case .gradientMap: image = try settings.gradientMap.apply(job.image)
         case .blackWhite: image = try settings.blackWhite.apply(job.image)
         case .colorBalance: image = try settings.colorBalance.apply(job.image)
+        case .filmNegative: image = try settings.filmNegative.apply(job.image)
         case .cameraRaw: image = try settings.cameraRaw.apply(job.image, clipping: job.cameraRawClipping, scale: job.scale, seed: job.seed,
                                                                 visualizePointColor: job.visualizesPointColor, sharpenMask: job.showsSharpenMask,
                                                                 brightness: job.cameraRawBrightness, usesGPU: job.cameraRawUsesGPU)
@@ -849,6 +853,10 @@ extension EditorSession {
             if kind == .volumetricLight, !repeating, let image = layer.asset?.image {
                 settings.volumetric.center = VolumetricLighting.brightestPoint(in: image)
                     .applying(BrushRaster.pixelToDocument(layer.transform, width: image.width, height: image.height))
+            }
+            // Film Negative finds where this scan's tones lie, keeping the sliders as they were last set.
+            if kind == .filmNegative, let image = layer.asset?.image {
+                settings.filmNegative.measure(image)
             }
             // Gradient Map starts from the foreground and background colors, as in Photoshop.
             if kind == .gradientMap {

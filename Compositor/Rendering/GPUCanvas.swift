@@ -564,7 +564,7 @@ nonisolated enum GPUAdjustment {
     static func apply(_ adjustment: LayerAdjustment, to image: CIImage, scale: CGFloat, mapping: CGAffineTransform,
                       hdr: Bool = false, document: CGSize? = nil) -> CIImage? {
         if hdr, adjustment.kind == .exposure { return exposure(adjustment.exposure, to: image) }
-        if hdr, [.levels, .hsv, .curves, .blackWhite, .colorBalance, .gradientMap, .invert, .vignette, .tonalContrast]
+        if hdr, [.levels, .hsv, .curves, .blackWhite, .colorBalance, .gradientMap, .invert, .vignette, .tonalContrast, .filmNegative]
             .contains(adjustment.kind) {
             // Worked on in straight colors at full coverage, so the blend filters' compositing leaves them alone; the
             // coverage goes back at the end.
@@ -588,6 +588,18 @@ nonisolated enum GPUAdjustment {
             let size = 1024, step = Double(size - 1)
             let curve = (0..<size).flatMap { index in
                 [LevelsChannel.red, .green, .blue].map { Float(adjustment.levels.apply(Double(index) / step, channel: $0)) }
+            }
+            return image.applyingFilter("CIColorCurves", parameters: [
+                "inputCurvesData": curve.withUnsafeBufferPointer { Data(buffer: $0) },
+                "inputCurvesDomain": CIVector(x: 0, y: 1),
+                "inputColorSpace": CGColorSpace(name: CGColorSpace.sRGB)!,
+            ])
+        case .filmNegative:
+            // A curve per channel, as Levels; more finely sampled, as the density curve is steep where the film is dense.
+            let negative = adjustment.filmNegative
+            let size = 4096, step = Double(size - 1)
+            let curve = (0..<size).flatMap { index in
+                (0..<3).map { Float(negative.value(Double(index) / step, channel: $0)) }
             }
             return image.applyingFilter("CIColorCurves", parameters: [
                 "inputCurvesData": curve.withUnsafeBufferPointer { Data(buffer: $0) },

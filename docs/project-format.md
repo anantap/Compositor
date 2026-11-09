@@ -1,8 +1,8 @@
-# Compositor project format, versions 1–21
+# Compositor project format, versions 1–22
 
 A `.comp` file is a macOS document package containing `manifest.json` and an `images/` directory of `<layer UUID>.png` assets.
 
-The manifest identifies `com.compositor.project`, version `21` for new saves (versions `1`–`20` remain readable), and the sRGB working space. It stores document UUID, pixel dimensions, active layer UUID, and layers in bottom-to-top order. Each layer stores its UUID, name, visibility, transform (origin, size, clockwise rotation, flips, sampling), and optional image filename. Blank layers have no image asset.
+The manifest identifies `com.compositor.project`, version `22` for new saves (versions `1`–`21` remain readable), and the sRGB working space. It stores document UUID, pixel dimensions, active layer UUID, and layers in bottom-to-top order. Each layer stores its UUID, name, visibility, transform (origin, size, clockwise rotation, flips, sampling), and optional image filename. Blank layers have no image asset.
 
 Embedded PNGs preserve source pixels and transparency; transforms remain separate. Projects survive moving or deleting imported source photos. Saving uses a coordinated atomic package replacement. Unsupported versions, invalid metadata, missing assets, unsafe paths, and oversized data are rejected before replacing the live document.
 
@@ -70,3 +70,5 @@ Version 19 adds the `Sharpen` adjustment kind: an unsharp mask, its settings in 
 Version 20 adds `prismFringe` 0–100 to the `lens` settings: how far Prism splits each copy's red and blue apart, in hundredths of a percent of the document's longer side (0 keeps the copies crisp). Left out, it takes 30, the split earlier versions always drew. Older app builds reject v20.
 
 Version 21 adds the `Reduce Noise` adjustment kind, its settings in a `reduceNoise` object inside `filterLayerSettings`: `strength` (how much grain is smoothed from the brightness), `details` (how much texture is kept from it) and `color` (how much colored speckle is smoothed), each 0–100. Files declaring 1–20 cannot contain it, and older app builds reject v21.
+
+Version 22 adds the `Film Negative` adjustment kind, which makes a scanned color negative positive. Its settings are in the adjustment's optional `filmNegativeSettings`: `shadowDensity` and `highlightDensity`, each three optical densities (red, green, blue, 0–5, every highlight above its shadow) that print as black and white; `measured`, whether those were measured from a picture yet (a layer opened for editing measures them from what is below it while this is false); `exposure` (−100–100), `contrast` (0–100), `temperature` and `tint` (−100–100), and `blackPoint` and `whitePoint` (−50–50). Files declaring 1–21 cannot contain the kind or the object, and older app builds reject v22.

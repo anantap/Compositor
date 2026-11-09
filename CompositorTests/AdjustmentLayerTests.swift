@@ -190,7 +190,8 @@ import Testing
             #expect(session.activeLayer?.adjustment?.curves == settings.curves)
             await session.commitFilter()
         case .exposure, .gradientMap, .grain, .blackWhite, .colorBalance, .gaussianBlur, .motionBlur, .addNoise,
-             .progressiveBlur, .bloomGlow, .rgbSplit, .vignette, .lensEffects, .tonalContrast, .sharpen, .reduceNoise:
+             .progressiveBlur, .bloomGlow, .rgbSplit, .vignette, .lensEffects, .tonalContrast, .sharpen, .reduceNoise,
+             .filmNegative:
             #expect(session.filterEdit?.kind == kind.filterKind)
             var settings = try #require(session.filterEdit).settings
             switch kind {
@@ -209,6 +210,7 @@ import Testing
             case .lensEffects: settings.lens.effect = .bokeh; settings.lens.bokehShape = .hexagon
             case .sharpen: settings.sharpenAmount = 150; settings.sharpenRadius = 2.5
             case .reduceNoise: settings.reduceNoiseLuminance = 80; settings.reduceNoiseColor = 20
+            case .filmNegative: settings.filmNegative.exposure = 40; settings.filmNegative.tint = -20
             default: settings.grain.amount = 70
             }
             session.updateFilter(settings, preview: true)
@@ -229,6 +231,10 @@ import Testing
             if kind == .lensEffects { #expect(live.filterLayer.lens?.effect == .bokeh && live.filterLayer.lens?.bokehShape == .hexagon) }
             if kind == .sharpen { #expect(live.filterLayer.sharpen?.amount == 150 && live.filterLayer.sharpen?.radius == 2.5) }
             if kind == .reduceNoise { #expect(live.filterLayer.reduceNoise?.strength == 80 && live.filterLayer.reduceNoise?.color == 20) }
+            if kind == .filmNegative {
+                #expect(live.filmNegative.exposure == 40 && live.filmNegative.tint == -20)
+                #expect(created.filmNegativeSettings == nil, "a new layer carries no settings until it is edited")
+            }
             await session.commitFilter()
         case .hsv:
             var settings = try #require(session.hueSaturation).settings
@@ -265,6 +271,11 @@ import Testing
                     && reopened.distance == saved.resolvedMotionDistance)
             #expect(reopened.amount == saved.resolvedNoiseAmount && reopened.gaussian == saved.resolvedNoiseGaussian
                     && reopened.monochromatic == saved.resolvedNoiseMonochromatic)
+            session.updateFilter(FilterSettings(), preview: true)
+            session.cancelFilter()
+        case .filmNegative:
+            // Reopens as saved, without measuring again.
+            #expect(try #require(session.filterEdit).settings.filmNegative == saved.filmNegative)
             session.updateFilter(FilterSettings(), preview: true)
             session.cancelFilter()
         case .vignette, .lensEffects, .tonalContrast, .sharpen, .reduceNoise:

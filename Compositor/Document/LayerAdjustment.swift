@@ -10,9 +10,11 @@ nonisolated enum AdjustmentKind: String, Codable, CaseIterable, Sendable {
     case progressiveBlur = "Progressive Blur", bloomGlow = "Bloom / Glow", rgbSplit = "RGB Split"
     case vignette = "Vignette", lensEffects = "Lens Effects", tonalContrast = "Tonal Contrast"
     case sharpen = "Sharpen", reduceNoise = "Reduce Noise"
+    case filmNegative = "Film Negative"
     /// The menus' two groups, each in the order of the menu it comes from: the Image menu's color adjustments, then
     /// the Filter menu's filters.
-    static let imageAdjustments: [Self] = [.curves, .levels, .hsv, .blackWhite, .colorBalance, .exposure, .gradientMap, .grain, .invert]
+    static let imageAdjustments: [Self] = [.curves, .levels, .hsv, .blackWhite, .colorBalance, .exposure, .gradientMap, .grain,
+                                           .filmNegative, .invert]
     static let filters: [Self] = [.gaussianBlur, .motionBlur, .progressiveBlur, .sharpen, .reduceNoise, .addNoise, .vignette, .bloomGlow, .rgbSplit,
                                   .lensEffects, .tonalContrast]
     var symbol: String {
@@ -37,6 +39,7 @@ nonisolated enum AdjustmentKind: String, Codable, CaseIterable, Sendable {
         case .tonalContrast: return "circle.lefthalf.striped.horizontal"
         case .sharpen: return "triangle.lefthalf.filled"
         case .reduceNoise: return "circle.dotted.and.circle"
+        case .filmNegative: return "film"
         }
     }
     /// The filter panel that edits this kind; Levels and Hue/Saturation have panels of their own.
@@ -61,6 +64,7 @@ nonisolated enum AdjustmentKind: String, Codable, CaseIterable, Sendable {
         case .tonalContrast: return .tonalContrast
         case .sharpen: return .sharpen
         case .reduceNoise: return .reduceNoise
+        case .filmNegative: return .filmNegative
         // Hue/Saturation and Levels have panels of their own; Invert has nothing to set.
         case .hsv, .levels, .invert: return nil
         }
@@ -85,6 +89,8 @@ nonisolated struct LayerAdjustment: Codable, Equatable, Sendable {
     var grainSettings: GrainSettings?
     var blackWhiteSettings: BlackWhiteSettings?
     var colorBalanceSettings: ColorBalanceSettings?
+    /// Film Negative's (version 22); absent from every other kind of layer.
+    var filmNegativeSettings: FilmNegativeSettings?
     // Optional so projects created before blur adjustments continue to decode unchanged.
     var blurRadius: Double?
     var motionAngle: Double?
@@ -119,6 +125,10 @@ nonisolated struct LayerAdjustment: Codable, Equatable, Sendable {
     var colorBalance: ColorBalanceSettings {
         get { colorBalanceSettings ?? ColorBalanceSettings() }
         set { colorBalanceSettings = newValue }
+    }
+    var filmNegative: FilmNegativeSettings {
+        get { filmNegativeSettings ?? FilmNegativeSettings() }
+        set { filmNegativeSettings = newValue }
     }
     var gaussianRadius: Double {
         get { blurRadius ?? 10 }
@@ -173,6 +183,7 @@ nonisolated struct LayerAdjustment: Codable, Equatable, Sendable {
         && resolvedHSV.bands.values.allSatisfy { $0.handles.allSatisfy { $0.isFinite } }
         && levels.ranges.count == 4 && levels.ranges.allSatisfy { $0 == $0.normalized } && curves.isValid
         && exposure.isValid && gradientMap.isValid && grain.isValid && blackWhite.isValid && colorBalance.isValid
+        && filmNegative.isValid
         && gaussianRadius.isFinite && (0.1...250).contains(gaussianRadius)
         && resolvedMotionAngle.isFinite && (-90...90).contains(resolvedMotionAngle)
         && resolvedMotionDistance.isFinite && (1...2000).contains(resolvedMotionDistance)
@@ -215,6 +226,7 @@ nonisolated struct LayerAdjustment: Codable, Equatable, Sendable {
         case .curves: return try curves.apply(image)
         case .blackWhite: return try blackWhite.apply(image)
         case .colorBalance: return try colorBalance.apply(image)
+        case .filmNegative: return try filmNegative.apply(image)
         case .exposure: return try exposure.apply(image)
         case .gradientMap: return try gradientMap.apply(image)
         case .grain:

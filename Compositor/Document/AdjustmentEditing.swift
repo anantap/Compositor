@@ -41,7 +41,8 @@ extension EditorSession {
                 edit.settings = original.resolvedHSV
                 hueSaturation = edit
             case .curves, .exposure, .gradientMap, .grain, .blackWhite, .colorBalance, .gaussianBlur, .motionBlur, .addNoise,
-                 .progressiveBlur, .bloomGlow, .rgbSplit, .vignette, .lensEffects, .tonalContrast, .sharpen, .reduceNoise:
+                 .progressiveBlur, .bloomGlow, .rgbSplit, .vignette, .lensEffects, .tonalContrast, .sharpen, .reduceNoise,
+                 .filmNegative:
                 var settings = original.filterLayer.applied(to: FilterSettings())
                 settings.curves = original.curves
                 settings.exposure = original.exposure
@@ -49,6 +50,11 @@ extension EditorSession {
                 settings.grain = original.grain
                 settings.blackWhite = original.blackWhite
                 settings.colorBalance = original.colorBalance
+                settings.filmNegative = original.filmNegative
+                // A new Film Negative layer finds where the tones lie in what is below it.
+                if original.kind == .filmNegative, !original.filmNegative.measured {
+                    settings.filmNegative.measure(raster.image)
+                }
                 settings.radius = original.gaussianRadius
                 settings.angle = original.resolvedMotionAngle
                 settings.distance = original.resolvedMotionDistance
@@ -78,7 +84,8 @@ extension EditorSession {
             guard let hueSaturation else { return nil }
             value.hsvSettings = hueSaturation.settings
         case .curves, .exposure, .gradientMap, .grain, .blackWhite, .colorBalance, .gaussianBlur, .motionBlur, .addNoise,
-             .progressiveBlur, .bloomGlow, .rgbSplit, .vignette, .lensEffects, .tonalContrast, .sharpen, .reduceNoise:
+             .progressiveBlur, .bloomGlow, .rgbSplit, .vignette, .lensEffects, .tonalContrast, .sharpen, .reduceNoise,
+             .filmNegative:
             guard let filterEdit else { return nil }
             switch value.kind {
             case .exposure: value.exposure = filterEdit.settings.exposure
@@ -86,6 +93,7 @@ extension EditorSession {
             case .grain: value.grain = filterEdit.settings.grain
             case .blackWhite: value.blackWhite = filterEdit.settings.blackWhite
             case .colorBalance: value.colorBalance = filterEdit.settings.colorBalance
+            case .filmNegative: value.filmNegative = filterEdit.settings.filmNegative
             case .gaussianBlur: value.gaussianRadius = filterEdit.settings.radius
             case .motionBlur:
                 value.resolvedMotionAngle = filterEdit.settings.angle
